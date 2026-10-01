@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>準1級 Day 2 Crossword</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@700&family=Kosugi+Maru&display=swap" rel="stylesheet">
+  <style>
+    /* ------------------------------------------
+       1. ブラウザ表示用スタイル
+    ------------------------------------------ */
+    :root { --primary: #3498db; }
+    body { 
+      font-family: 'Nunito', 'Kosugi Maru', sans-serif; 
+      margin: 0; display: flex; flex-direction: column; align-items: center; 
+      background-color: white; padding-bottom: 100px; position: relative;
+    }
+    h1 { font-size: 28px; margin-top: 40px; margin-bottom: 20px; font-weight: 700; color: var(--primary); }
+    .content-wrapper { display: flex; flex-direction: row; align-items: flex-start; gap: 40px; padding: 0 20px; }
+    table { border-collapse: collapse; background: white; }
+    td { width: 30px; height: 30px; padding: 0; position: relative; }
+    td.active { border: 1px solid black; background-color: white; }
+    
+    td.gray-cell { background-color: #d1d1d1 !important; }
+    td.gray-cell input { visibility: hidden; }
+
+    td.empty { border: none; }
+    input { 
+      width: 100%; height: 100%; border: none; text-align: center; 
+      font-family: 'Nunito', sans-serif; font-size: 20px; font-weight: bold; 
+      background: transparent; outline: none; text-transform: lowercase;
+    }
+    .num { position: absolute; top: 1px; left: 2px; font-size: 9px; font-weight: bold; color: #000; }
+    
+    #clue-wrapper { 
+      display: flex; flex-direction: column; min-width: 250px;
+      border-left: 2px solid #333; padding-left: 20px;
+      font-family: 'Hiragino Maru Gothic Pro', 'ヒラギノ丸ゴシック', sans-serif;
+    }
+    .clue-column { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    h3 { font-size: 20px; margin: 0 0 10px 0; color: #333; }
+    .clue-item { font-size: 16px; line-height: 1.4; }
+    
+    .no-print { position: fixed; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 100; }
+    button { 
+      padding: 10px 20px; cursor: pointer; border-radius: 8px; border: none;
+      font-family: 'Kosugi Maru', sans-serif; font-size: 14px; font-weight: bold; color: white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1); white-space: nowrap;
+    }
+    .btn-shuffle { background-color: #3498db; }
+    .btn-answer { background-color: #f39c12; }
+    .btn-print { background-color: #27ae60; }
+    
+    /* ------------------------------------------
+       2. PDF / 印刷用スタイル
+    ------------------------------------------ */
+    @media print { 
+      @page { size: A4 portrait; margin: 0; } 
+      .no-print { display: none; } 
+      body { padding-top: 0; padding-bottom: 0; padding-left: 10mm; padding-right: 0mm; color: #000 !important; display: block; width: auto; }
+      h1 { display: block !important; width: 100% !important; text-align: left !important; margin-top: 1.5cm !important; margin-bottom: 1cm !important; margin-left: 1cm !important; color: #000 !important; font-size: 24px; }
+      table { height: auto !important; }
+      td { width: 8.5mm !important; height: 8.5mm !important; text-align: center; vertical-align: middle; padding: 0 !important; }
+      input { font-size: 16pt !important; height: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; background: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; }
+      td.gray-cell { background-color: #d1d1d1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      * { color: #000 !important; border-color: #000 !important; border-left: none !important; }
+      td.active { border: 0.5pt solid black !important; } 
+      input { color: transparent !important; }
+      .layout-side { display: flex !important; flex-direction: row !important; justify-content: space-between !important; width: 100%; }
+      .layout-side #grid-container { flex-shrink: 0 !important; }
+      .layout-side #clue-wrapper { flex-direction: column !important; flex: 0 0 200px; margin-left: auto !important; text-align: left; }
+      .layout-bottom { display: flex !important; flex-direction: column !important; width: 100%; }
+      .layout-bottom #clue-wrapper { flex-direction: row !important; width: 100%; margin-top: 20px; gap: 20px; }
+      .layout-bottom .clue-column { flex: none; width: 300px; }
+      #clue-wrapper { border: none !important; padding-left: 5px; }
+      .clue-item { font-size: 16px; line-height: 1.1; margin-bottom: 0.1rem !important; }
+      h3 { font-size: 14px; margin-bottom: 4px; font-weight: bold; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="no-print">
+  <button class="btn-shuffle" onclick="location.reload()">シャッフル</button>
+  <button class="btn-answer" onclick="checkAnswers()">答えを表示</button>
+  <button class="btn-print" onclick="window.print()">PDF保存 / 印刷</button>
+</div>
+
+<h1>準1級 Day 2 Crossword</h1>
+
+<div class="content-wrapper" id="main-wrapper">
+  <div id="grid-container">
+    <table id="crossword-table"></table>
+  </div>
+  
+  <div id="clue-wrapper">
+    <div class="clue-column">
+      <h3>ACROSS</h3>
+      <div id="across-clues" style="display:contents;"></div>
+    </div>
+    <div class="clue-column">
+      <h3>DOWN</h3>
+      <div id="down-clues" style="display:contents;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 準1級 Day 2 の単語データ (全16語)
+const data = [
+    { en: "epidemic", ja: "流行" },
+    { en: "heritage", ja: "遺産" },
+    { en: "perspective", ja: "観点" },
+    { en: "circulation", ja: "流通" },
+    { en: "literacy", ja: "読み書きの能力" },
+    { en: "source", ja: "源" },
+    { en: "ban", ja: "禁止" },
+    { en: "breed", ja: "品種" },
+    { en: "ecosystem", ja: "生態系" },
+    { en: "emission", ja: "放出" },
+    { en: "institution", ja: "機関" },
+    { en: "petition", ja: "請願書" },
+    { en: "promotion", ja: "昇進" },
+    { en: "purchase", ja: "購入" },
+    { en: "statistics", ja: "統計" },
+    { en: "congestion", ja: "渋滞" }
+];
+
+const SIZE = 50;
+let grid, placed;
+
+function canPlace(word, r, c, dir) {
+  if (r < 1 || r >= SIZE - word.length - 1 || c < 1 || c >= SIZE - word.length - 1) return false;
+  if (dir === 'across') {
+    if (grid[r][c - 1] || grid[r][c + word.length]) return false;
+  } else {
+    if (grid[r - 1][c] || grid[r + word.length][c]) return false;
+  }
+  for (let i = 0; i < word.length; i++) {
+    let currR = (dir === 'across') ? r : r + i;
+    let currC = (dir === 'across') ? c + i : c;
+    let char = word[i].toLowerCase();
+    if (grid[currR][currC]) {
+      if (grid[currR][currC] !== char) return false;
+    } else {
+      if (dir === 'across') {
+        if (grid[currR - 1][currC] || grid[currR + 1][currC]) return false;
+      } else {
+        if (grid[currR][currC - 1] || grid[currR][currC + 1]) return false;
+      }
+    }
+  }
+  return true; 
+}
+
+function setup() {
+  let attempts = 0;
+  let success = false;
+  while (!success && attempts < 500) {
+    attempts++;
+    grid = Array.from({ length: SIZE }, () => Array(SIZE).fill(null));
+    placed = [];
+    let wordsToPlace = [...data].sort((a, b) => b.en.length - a.en.length);
+    let first = wordsToPlace.shift();
+    let startR = 20, startC = 20;
+    for (let i = 0; i < first.en.length; i++) grid[startR + i][startC] = first.en[i].toLowerCase();
+    placed.push({ en: first.en.toLowerCase(), ja: first.ja, r: startR, c: startC, dir: 'down' });
+
+    let allPlaced = true;
+    for (let item of wordsToPlace) {
+      let word = item.en.toLowerCase();
+      let overlapOptions = [];
+      for (let r = 2; r < SIZE - 18; r++) {
+        for (let c = 2; c < SIZE - 18; c++) {
+          ['across', 'down'].forEach(dir => {
+            if (canPlace(word, r, c, dir)) {
+              let overlap = false;
+              for(let k=0; k<word.length; k++) {
+                if(grid[dir==='across'? r : r+k][dir==='across'? c+k : c]) overlap = true;
+              }
+              if(overlap) overlapOptions.push({ r, c, dir });
+            }
+          });
+        }
+      }
+      if (overlapOptions.length > 0) {
+        let pos = overlapOptions[Math.floor(Math.random() * overlapOptions.length)];
+        for (let k = 0; k < word.length; k++) {
+          let rr = (pos.dir === 'across') ? pos.r : pos.r + k;
+          let cc = (pos.dir === 'across') ? pos.c + k : pos.c;
+          grid[rr][cc] = word[k];
+        }
+        placed.push({ en: word, ja: item.ja, r: pos.r, c: pos.c, dir: pos.dir });
+      } else { allPlaced = false; break; }
+    }
+    if (allPlaced && placed.length === data.length) success = true;
+  }
+  render();
+}
+
+function render() {
+  const table = document.getElementById('crossword-table');
+  table.innerHTML = "";
+  if (placed.length === 0) return;
+  let minR = SIZE, maxR = 0, minC = SIZE, maxC = 0;
+  placed.forEach(p => {
+    minR = Math.min(minR, p.r); minC = Math.min(minC, p.c);
+    maxR = Math.max(maxR, p.dir === 'down' ? p.r + p.en.length - 1 : p.r);
+    maxC = Math.max(maxC, p.dir === 'across' ? p.c + p.en.length - 1 : p.c);
+  });
+  for (let r = minR; r <= maxR; r++) {
+    let tr = table.insertRow();
+    for (let c = minC; c <= maxC; c++) {
+      let td = tr.insertCell();
+      let char = grid[r][c];
+      if (char) {
+        td.className = 'active';
+        td.innerHTML = `<input data-ans="${char}" maxlength="1" spellcheck="false" oninput="this.value = this.value.toLowerCase()">`;
+        let start = placed.find(p => p.r === r && p.c === c);
+        if (start) td.innerHTML += `<span class="num">${getNum(r, c)}</span>`;
+      } else { td.className = 'empty'; }
+    }
+  }
+
+  const wrapper = document.getElementById('main-wrapper');
+  const tableHeightPx = table.offsetHeight;
+  const thresholdPx = 21 * 37.8; 
+
+  if (tableHeightPx > thresholdPx) {
+    wrapper.classList.add('layout-side');
+    wrapper.classList.remove('layout-bottom');
+  } else {
+    wrapper.classList.add('layout-bottom');
+    wrapper.classList.remove('layout-side');
+  }
+
+  const ac = document.getElementById('across-clues'), dw = document.getElementById('down-clues');
+  ac.innerHTML = ""; dw.innerHTML = "";
+  placed.sort((a,b) => getNum(a.r,a.c) - getNum(b.r,b.c)).forEach(p => {
+    let div = `<div class="clue-item">${getNum(p.r,p.c)}. ${p.ja}</div>`;
+    if (p.dir === 'across') ac.innerHTML += div; else dw.innerHTML += div;
+  });
+}
+
+function getNum(r, c) {
+  let starts = [];
+  placed.forEach(p => { if (!starts.some(s => s.r === p.r && s.c === p.c)) starts.push({r:p.r, c:p.c}); });
+  starts.sort((a,b) => a.r - b.r || a.c - b.c);
+  return starts.findIndex(s => s.r === r && s.c === c) + 1;
+}
+
+function checkAnswers() {
+  document.querySelectorAll('input:not([disabled])').forEach(i => {
+    if (i.value) {
+      i.style.color = (i.value.toLowerCase() === i.dataset.ans) ? "#3498db" : "#e74c3c";
+    }
+  });
+}
+setup();
+</script>
+</body>
+</html>
